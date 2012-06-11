@@ -21,6 +21,7 @@
 
 package org.apache.tiles.request.portlet.wildcard;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -105,6 +106,8 @@ public class WildcardPortletApplicationContext extends PortletApplicationContext
                 try {
                     url = resources[i].getURL();
                     resourceList.add(new URLApplicationResource(url.toExternalForm(), url));
+                } catch (FileNotFoundException e) {
+                    // the resource does not exist: ignore it
                 } catch (IOException e) {
                     // shouldn't happen with the kind of resources we're using
                     throw new IllegalArgumentException("no URL for " + resources[i].toString(), e);

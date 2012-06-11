@@ -24,29 +24,22 @@ package org.apache.tiles.request.freemarker;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.tiles.request.ApplicationContext;
-import org.apache.tiles.request.Request;
-import org.apache.tiles.request.DispatchRequest;
-import org.apache.tiles.request.servlet.ServletRequest;
 import org.junit.Before;
 import org.junit.Test;
 
 import freemarker.core.Environment;
-import freemarker.ext.servlet.HttpRequestHashModel;
 import freemarker.template.ObjectWrapper;
 import freemarker.template.Template;
-import freemarker.template.TemplateHashModel;
+import freemarker.template.TemplateHashModelEx;
+import freemarker.template.TemplateModel;
 import freemarker.template.TemplateModelException;
 
 /**
@@ -57,14 +50,29 @@ import freemarker.template.TemplateModelException;
 public class FreemarkerRequestTest {
 
     /**
-     * The reuqest context to test.
+     * The request context to test.
      */
-    private FreemarkerRequest context;
+    private FreemarkerRequest request;
 
     /**
-     * A string writer.
+     * An ApplicationContext.
      */
-    private StringWriter writer;
+    private ApplicationContext applicationContext;
+
+    /**
+     * a Template.
+     */
+    private Template template;
+    
+    /**
+     * a model.
+     */
+    private TemplateHashModelEx model;
+    
+    /**
+     * A print writer.
+     */
+    private PrintWriter writer;
 
     /**
      * The FreeMarker environment.
@@ -78,185 +86,96 @@ public class FreemarkerRequestTest {
 
     /**
      * Sets up the test.
+     * @throws TemplateModelException 
      */
     @Before
-    public void setUp() {
-        Template template = createMock(Template.class);
-        TemplateHashModel model = createMock(TemplateHashModel.class);
-        writer = new StringWriter();
-        expect(template.getMacros()).andReturn(new HashMap<Object, Object>());
-        replay(template, model);
-        env = new Environment(template, model, writer);
-        locale = Locale.ITALY;
-        env.setLocale(locale);
-    }
-
-    /**
-     * Tests {@link FreemarkerRequest#createServletFreemarkerRequest(ApplicationContext, Environment)}.
-     * @throws TemplateModelException If something goes wrong.
-     */
-    @Test
-    public void testCreateServletFreemarkerRequest() throws TemplateModelException {
-        Template template = createMock(Template.class);
-        TemplateHashModel model = createMock(TemplateHashModel.class);
-        PrintWriter writer = new PrintWriter(new StringWriter());
-        HttpServletRequest httpRequest = createMock(HttpServletRequest.class);
-        HttpServletResponse httpResponse = createMock(HttpServletResponse.class);
-        ObjectWrapper objectWrapper = createMock(ObjectWrapper.class);
-        ApplicationContext applicationContext = createMock(ApplicationContext.class);
-
-        expect(template.getMacros()).andReturn(new HashMap<Object, Object>());
-
-        replay(httpRequest, httpResponse, objectWrapper);
-        HttpRequestHashModel requestHashModel = new HttpRequestHashModel(httpRequest, httpResponse, objectWrapper);
-        expect(model.get("Request")).andReturn(requestHashModel);
-
+    public void setUp() throws TemplateModelException {
+        applicationContext = createMock(ApplicationContext.class);
+        expect(applicationContext.getApplicationScope()).andReturn(new HashMap<String, Object>()).anyTimes();
+        template = createMock(Template.class);
+        model = createMock(TemplateHashModelEx.class);
+        expect(model.get("test")).andReturn(ObjectWrapper.DEFAULT_WRAPPER.wrap("testValue")).anyTimes();
+        writer = new PrintWriter(new StringWriter());
+        expect(template.getMacros()).andReturn(Collections.<String, TemplateModel> emptyMap());
         replay(template, model, applicationContext);
-        Environment env = new Environment(template, model, writer);
-        Locale locale = Locale.ITALY;
+        env = new Environment(template, model, writer);
+        locale = new Locale("te", "ST");
         env.setLocale(locale);
-
-        FreemarkerRequest request = FreemarkerRequest.createServletFreemarkerRequest(applicationContext, env);
-        ServletRequest servletRequest = (ServletRequest) request.getWrappedRequest();
-        assertEquals(httpRequest, servletRequest.getRequest());
-        assertEquals(httpResponse, servletRequest.getResponse());
-        verify(template, model, httpRequest, httpResponse, objectWrapper, applicationContext);
+        request = new FreemarkerRequest(applicationContext, env);
+        env.setGlobalVariable("testPage", ObjectWrapper.DEFAULT_WRAPPER.wrap("testValue"));
     }
 
-    /**
-     * Tests {@link FreemarkerRequest#dispatch(String)}.
-     *
-     * @throws IOException If something goes wrong.
-     */
     @Test
-    public void testDispatch() throws IOException {
-        String path = "this way";
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        ApplicationContext applicationContext = createMock(ApplicationContext.class);
-        Map<String, Object> requestScope = new HashMap<String, Object>();
-
-        enclosedRequest.include(path);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        expect(enclosedRequest.getContext(Request.REQUEST_SCOPE)).andReturn(requestScope);
-        replay(enclosedRequest, applicationContext);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        context.dispatch(path);
-        verify(enclosedRequest, applicationContext);
+    public void testHeaders() {
+        assertEquals("Header is not empty", 0, request.getHeader().size());
+        try {
+            request.getHeader().put("test", "value");
+            assertTrue("Header is modifiable", false);
+        } catch(UnsupportedOperationException e) {
+            // ok, that's what we want
+        }
+        assertEquals("HeaderValues is not empty", 0, request.getHeaderValues().size());
+        try {
+            request.getHeaderValues().put("test", new String[]{"value"});
+            assertTrue("HeaderValues is modifiable", false);
+        } catch(UnsupportedOperationException e) {
+            // ok, that's what we want
+        }
+        try {
+            request.getResponseHeaders().setValue("test", "value");
+            assertTrue("ResponseHeaders is modifiable", false);
+        } catch(UnsupportedOperationException e) {
+            // ok, that's what we want
+        }
+        assertEquals("Param is not empty", 0, request.getParam().size());
+        try {
+            request.getParam().put("test", "value");
+            assertTrue("Param is modifiable", false);
+        } catch(UnsupportedOperationException e) {
+            // ok, that's what we want
+        }
+        assertEquals("ParamValues is not empty", 0, request.getParamValues().size());
+        try {
+            request.getParamValues().put("test", new String[]{"value"});
+            assertTrue("ParamValues is modifiable", false);
+        } catch(UnsupportedOperationException e) {
+            // ok, that's what we want
+        }
+        verify(template, model, applicationContext);
     }
 
-    /**
-     * Tests {@link FreemarkerRequest#getPageScope()}.
-     */
     @Test
-    public void testGetPageScope() {
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertTrue(context.getPageScope() instanceof EnvironmentScopeMap);
-        verify(enclosedRequest);
+    public void testAvailableScopes() {
+        assertEquals(Arrays.asList("application", "request", "page"), request.getAvailableScopes());
+        assertSame(request.getContext("application"), request.getApplicationContext().getApplicationScope());
+        assertNotNull(request.getContext("request").get("test"));
+        assertNotNull(request.getContext("page").get("testPage"));
+        verify(template, model, applicationContext);
     }
 
-    /**
-     * Tests {@link FreemarkerRequest#getNativeScopes()}.
-     */
     @Test
-    public void testGetAvailableScopes() {
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertArrayEquals(new String[] { "parent", "page" }, //
-                context.getAvailableScopes().toArray());
-        verify(enclosedRequest);
+    public void testApplicationContext() {
+        assertSame(applicationContext, request.getApplicationContext());
+        verify(template, model, applicationContext);
     }
 
-    /**
-     * Tests {@link FreemarkerRequest#getRequestLocale()}.
-     */
     @Test
-    public void testGetRequestLocale() {
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertEquals(locale, context.getRequestLocale());
-        verify(enclosedRequest);
+    public void testOutput() {
+        assertEquals(writer, request.getWriter());
+        assertEquals(writer, request.getPrintWriter());
+        verify(template, model, applicationContext);
     }
 
-    /**
-     * Tests {@link FreemarkerRequest#getRequest()}.
-     */
     @Test
-    public void testGetRequest() {
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertEquals(env, context.getEnvironment());
-        verify(enclosedRequest);
+    public void testNotImplemented() {
+        assertTrue(request.isResponseCommitted());
+        assertFalse(request.isUserInRole("test"));
+        verify(template, model, applicationContext);
     }
 
-    /**
-     * Tests {@link FreemarkerRequest#getResponse()}.
-     */
     @Test
-    public void testGetResponse() {
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertEquals(env, context.getEnvironment());
-        verify(enclosedRequest);
-    }
-
-    /**
-     * Tests {@link FreemarkerRequest#getPrintWriter()}.
-     */
-    @Test
-    public void testGetPrintWriter() {
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertEquals(env, context.getEnvironment());
-        assertNotNull(context.getPrintWriter());
-        verify(enclosedRequest);
-    }
-
-    /**
-     * Tests {@link FreemarkerRequest#getPrintWriter()}.
-     */
-    @Test
-    public void testGetPrintWriterPrintWriter() {
-        Template template = createMock(Template.class);
-        TemplateHashModel model = createMock(TemplateHashModel.class);
-        PrintWriter writer = new PrintWriter(new StringWriter());
-        expect(template.getMacros()).andReturn(new HashMap<Object, Object>());
-        replay(template, model);
-        Environment env = new Environment(template, model, writer);
-        Locale locale = Locale.ITALY;
-        env.setLocale(locale);
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertSame(writer, context.getPrintWriter());
-        verify(enclosedRequest, template, model);
-    }
-
-
-    /**
-     * Tests {@link FreemarkerRequest#getWriter()}.
-     */
-    @Test
-    public void testGetWriter() {
-        DispatchRequest enclosedRequest = createMock(DispatchRequest.class);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-        replay(enclosedRequest);
-        context = new FreemarkerRequest(enclosedRequest, env);
-        assertEquals(env, context.getEnvironment());
-        assertNotNull(context.getWriter());
-        verify(enclosedRequest);
+    public void testLocale() {
+        assertEquals(locale, request.getRequestLocale());
+        verify(template, model, applicationContext);
     }
 }
