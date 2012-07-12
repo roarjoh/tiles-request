@@ -46,6 +46,7 @@ under the License.
 
     <modules>
         <module>tiles-request-api</module>
+        <module>tiles-request-basic</module>
         <module>tiles-request-servlet</module>
         <module>tiles-request-servlet-wildcard</module>
         <module>tiles-request-portlet</module>
