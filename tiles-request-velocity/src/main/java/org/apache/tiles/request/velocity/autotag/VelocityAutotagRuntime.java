@@ -21,43 +21,55 @@
 package org.apache.tiles.request.velocity.autotag;
 
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.tiles.autotag.core.runtime.ModelBody;
 import org.apache.tiles.autotag.core.runtime.AutotagRuntime;
 import org.apache.tiles.request.Request;
-import org.apache.tiles.request.servlet.ServletUtil;
 import org.apache.tiles.request.velocity.VelocityRequest;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.runtime.directive.Directive;
 import org.apache.velocity.runtime.parser.node.ASTBlock;
 import org.apache.velocity.runtime.parser.node.ASTMap;
 import org.apache.velocity.runtime.parser.node.Node;
-import org.apache.velocity.tools.view.ViewContext;
 
 /**
  * A Runtime for implementing Velocity Directives.
  */
 public class VelocityAutotagRuntime extends Directive implements AutotagRuntime<Request> {
+
+    private static Collection<VelocityRequestFactory> requestFactories;
+    static {
+        requestFactories = new ArrayList<VelocityRequestFactory>();
+        String[] requestFactoryNames = { //
+        "org.apache.tiles.request.velocity.autotag.VelocityViewRequestFactory", //
+                "org.apache.tiles.request.velocity.autotag.VelocityWrappedRequestFactory", //
+        };
+        for (String className : requestFactoryNames) {
+            try {
+                requestFactories.add((VelocityRequestFactory) Class.forName(className).newInstance());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private InternalContextAdapter context;
-    private Writer                 writer;
-    private Node                   node;
-    private Map<String, Object>    params;
+    private Writer writer;
+    private Node node;
+    private Map<String, Object> params;
 
     /** {@inheritDoc} */
     @Override
     public Request createRequest() {
-        ViewContext viewContext = (ViewContext) context.getInternalUserContext();
-        HttpServletRequest request = viewContext.getRequest();
-        HttpServletResponse response = viewContext.getResponse();
-        ServletContext servletContext = viewContext.getServletContext();
-        return VelocityRequest.createVelocityRequest(ServletUtil.getApplicationContext(servletContext),
-                                                     request,
-                                                     response,
-                                                     context,
-                                                     writer);
+        for (VelocityRequestFactory factory : requestFactories) {
+            VelocityRequest result = factory.createRequest(context, writer);
+            if (result != null) {
+                return result;
+            }
+        }
+        throw new IllegalArgumentException("Cannot create a Request from the velocity context");
     }
 
     /** {@inheritDoc} */

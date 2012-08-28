@@ -21,23 +21,25 @@
 
 package org.apache.tiles.request.velocity;
 
-import static org.easymock.EasyMock.*;
-import static org.easymock.classextension.EasyMock.*;
-import static org.junit.Assert.*;
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.util.Collections;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.tiles.request.ApplicationContext;
 import org.apache.tiles.request.DispatchRequest;
-import org.apache.tiles.request.servlet.ExternalWriterHttpServletResponse;
 import org.apache.tiles.request.servlet.ServletRequest;
 import org.apache.velocity.context.Context;
 import org.junit.Before;
@@ -83,8 +85,8 @@ public class VelocityRequestTest {
         ApplicationContext applicationContext = createMock(ApplicationContext.class);
 
         replay(velocityContext, httpRequest, response, applicationContext);
-        context = VelocityRequest.createVelocityRequest(applicationContext,
-                httpRequest, response, velocityContext, writer);
+        context = new VelocityRequest(new ServletRequest(applicationContext, httpRequest, response), velocityContext,
+                writer);
         ServletRequest servletRequest = (ServletRequest) context.getWrappedRequest();
         assertEquals(httpRequest, servletRequest.getRequest());
         assertEquals(response, servletRequest.getResponse());
@@ -100,90 +102,8 @@ public class VelocityRequestTest {
         expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
         replay(enclosedRequest);
         context = new VelocityRequest(enclosedRequest, velocityContext, writer);
-        assertArrayEquals(new String[] {"parent", "page"}, context.getAvailableScopes().toArray());
+        assertArrayEquals(new String[] { "parent", "page" }, context.getAvailableScopes().toArray());
         verify(enclosedRequest);
-    }
-
-    /**
-     * Tests {@link VelocityRequest#doInclude(String)}.
-     *
-     * @throws IOException If something goes wrong.
-     * @throws ServletException If something goes wrong.
-     */
-    @Test
-    public void testDoInclude() throws IOException, ServletException {
-        String path = "this way";
-        ServletRequest enclosedRequest = createMock(ServletRequest.class);
-        HttpServletRequest servletRequest = createMock(HttpServletRequest.class);
-        HttpServletResponse response = createMock(HttpServletResponse.class);
-        RequestDispatcher dispatcher = createMock(RequestDispatcher.class);
-
-        expect(servletRequest.getRequestDispatcher("this way")).andReturn(dispatcher);
-        dispatcher.include(eq(servletRequest), isA(ExternalWriterHttpServletResponse.class));
-        replay(servletRequest, response, dispatcher);
-
-        expect(enclosedRequest.getRequest()).andReturn(servletRequest);
-        expect(enclosedRequest.getResponse()).andReturn(response);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-
-        replay(velocityContext, enclosedRequest);
-        context = new VelocityRequest(enclosedRequest, velocityContext, writer);
-        context.doInclude(path);
-        verify(velocityContext, enclosedRequest, servletRequest, response, dispatcher);
-    }
-
-    /**
-     * Tests {@link VelocityRequest#doInclude(String)}.
-     *
-     * @throws IOException If something goes wrong.
-     */
-    @Test(expected = IOException.class)
-    public void testDoIncludeNoRequestDispatcher() throws IOException {
-        String path = "this way";
-        ServletRequest enclosedRequest = createMock(ServletRequest.class);
-        HttpServletRequest servletRequest = createMock(HttpServletRequest.class);
-        HttpServletResponse response = createMock(HttpServletResponse.class);
-
-        expect(servletRequest.getRequestDispatcher("this way")).andReturn(null);
-        replay(servletRequest, response);
-
-        expect(enclosedRequest.getRequest()).andReturn(servletRequest);
-        expect(enclosedRequest.getResponse()).andReturn(response);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-
-        replay(velocityContext, enclosedRequest);
-        context = new VelocityRequest(enclosedRequest, velocityContext, writer);
-        context.doInclude(path);
-        verify(velocityContext, enclosedRequest, servletRequest, response);
-    }
-
-    /**
-     * Tests {@link VelocityRequest#doInclude(String)}.
-     *
-     * @throws IOException If something goes wrong.
-     * @throws ServletException If something goes wrong.
-     */
-    @Test(expected = IOException.class)
-    public void testDoIncludeServletException() throws IOException, ServletException {
-        String path = "this way";
-        ServletRequest enclosedRequest = createMock(ServletRequest.class);
-        HttpServletRequest servletRequest = createMock(HttpServletRequest.class);
-        HttpServletResponse response = createMock(HttpServletResponse.class);
-        RequestDispatcher dispatcher = createMock(RequestDispatcher.class);
-
-        expect(servletRequest.getRequestDispatcher("this way")).andReturn(dispatcher);
-        dispatcher.include(eq(servletRequest), isA(ExternalWriterHttpServletResponse.class));
-        expectLastCall().andThrow(new ServletException());
-        replay(servletRequest, response, dispatcher);
-
-        expect(enclosedRequest.getRequest()).andReturn(servletRequest);
-        expect(enclosedRequest.getResponse()).andReturn(response);
-        expect(enclosedRequest.getAvailableScopes()).andReturn(Collections.singletonList("parent"));
-
-        replay(velocityContext, enclosedRequest);
-        context = new VelocityRequest(enclosedRequest, velocityContext, writer);
-        context.doInclude(path);
-        verify(velocityContext, enclosedRequest, servletRequest, response, dispatcher);
     }
 
     /**
