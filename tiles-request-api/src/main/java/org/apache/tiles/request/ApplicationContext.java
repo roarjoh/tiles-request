@@ -20,8 +20,6 @@
  */
 package org.apache.tiles.request;
 
-import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -31,7 +29,7 @@ import java.util.Map;
  *
  * @version $Rev$ $Date$
  */
-public interface ApplicationContext {
+public interface ApplicationContext extends ApplicationResourceLocator {
 
     /**
      * Returns the original, technology-dependent, context.
@@ -56,28 +54,4 @@ public interface ApplicationContext {
      */
     Map<String, String> getInitParams();
 
-    /**
-     * Return the application resource mapped to the specified path.
-     *
-     * @param localePath path to the desired resource, including the Locale suffix.
-     * @return the first located resource which matches the given path or null if no such resource exists.
-     */
-    ApplicationResource getResource(String localePath);
-
-    /**
-     * Return a localized version of an ApplicationResource.
-     *
-     * @param base the ApplicationResource.
-     * @param locale the desired Locale.
-     * @return the first located resource which matches the given path or null if no such resource exists.
-     */
-    ApplicationResource getResource(ApplicationResource base, Locale locale);
-
-    /**
-     * Return the application resources mapped to the specified path.
-     *
-     * @param path to the desired resource.
-     * @return all resources which match the given path.
-     */
-    Collection<ApplicationResource> getResources(String path);
 }

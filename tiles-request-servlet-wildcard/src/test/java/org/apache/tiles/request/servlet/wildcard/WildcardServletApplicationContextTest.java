@@ -42,6 +42,7 @@ import javax.servlet.ServletContext;
  *
  * @version $Rev$ $Date$
  */
+@SuppressWarnings("deprecation")
 public class WildcardServletApplicationContextTest extends TestCase {
 
     /**
@@ -97,7 +98,7 @@ public class WildcardServletApplicationContextTest extends TestCase {
                 .anyTimes();
         File dir = new File(".");
         EasyMock.expect(servletContext.getResource("/WEB-INF/")).andReturn(
-                dir.toURI().toURL());
+                dir.toURI().toURL()).anyTimes();
         URL pomUrl = new URL("file://tiles/pom.xml");
         EasyMock.expect(servletContext.getResource("/WEB-INF/pom.xml"))
                 .andReturn(pomUrl);
