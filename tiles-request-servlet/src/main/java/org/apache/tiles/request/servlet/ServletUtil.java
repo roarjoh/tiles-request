@@ -27,6 +27,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.apache.tiles.request.ApplicationContext;
+import org.apache.tiles.request.ApplicationContextWrapper;
 import org.apache.tiles.request.ApplicationAccess;
 import org.apache.tiles.request.RequestWrapper;
 import org.apache.tiles.request.Request;
@@ -113,8 +114,12 @@ public final class ServletUtil {
      * servlet-based.
      */
     public static ServletContext getServletContext(ApplicationContext applicationContext) {
-        if (applicationContext instanceof ServletApplicationContext) {
-            return (ServletContext) ((ServletApplicationContext) applicationContext).getContext();
+        ApplicationContext context = applicationContext;
+        while(context instanceof ApplicationContextWrapper) {
+            context = ((ApplicationContextWrapper)context).getWrappedApplicationContext();
+        }
+        if (context instanceof ServletApplicationContext) {
+            return (ServletContext) ((ServletApplicationContext) context).getContext();
         }
 
         throw new NotAServletEnvironmentException("Not a Servlet-based environment");

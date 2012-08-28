@@ -1,5 +1,5 @@
 /*
- * $Id: package-info.java 1049711 2010-12-15 21:12:00Z apetrelli $
+ * $Id$
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,7 +18,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
+package org.apache.tiles.request;
+
 /**
- * Extractors to get information from Freemarker objects.
+ *
+ * @version $Rev$ $Date$
+ * @since 1.1.0
  */
-package org.apache.tiles.request.freemarker.extractor;
+
+public interface LocatedResource extends ApplicationResource {
+    ApplicationResourceLocator getSource();
+}

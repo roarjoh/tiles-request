@@ -1,5 +1,5 @@
 /*
- * $Id: package-info.java 1049711 2010-12-15 21:12:00Z apetrelli $
+ * $Id$
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,6 +19,8 @@
  * under the License.
  */
 /**
- * Support for Freemarker's Environment as a request.
+ * Integration classes for spring.
+ * Allows to configure a TilesContainer using spring instead of
+ * subclassing BasicTilesContainer by hand.
  */
-package org.apache.tiles.request.freemarker;
+package org.apache.tiles.request.spring;

@@ -24,13 +24,12 @@ import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import javax.servlet.GenericServlet;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.tiles.autotag.core.runtime.ModelBody;
 import org.apache.tiles.request.ApplicationAccess;
@@ -42,9 +41,7 @@ import org.apache.tiles.request.freemarker.autotag.FreemarkerModelBody;
 import org.junit.Test;
 import freemarker.core.Environment;
 import freemarker.core.Macro;
-import freemarker.ext.servlet.FreemarkerServlet;
-import freemarker.ext.servlet.HttpRequestHashModel;
-import freemarker.ext.servlet.ServletContextHashModel;
+import freemarker.template.Configuration;
 import freemarker.template.ObjectWrapper;
 import freemarker.template.Template;
 import freemarker.template.TemplateDirectiveBody;
@@ -61,53 +58,52 @@ import freemarker.template.TemplateNumberModel;
 public class FreemarkerAutotagRuntimeTest {
 
     @Test
-    public void testCreateRequest() throws IOException, TemplateModelException{
-        @SuppressWarnings("unchecked")
-        Map<String, TemplateModel> params = createMock(Map.class);
+    public void testLookupRequest() throws IOException, TemplateModelException {
+        Map<String, TemplateModel> params = Collections.<String, TemplateModel> emptyMap();
         Template template = createMock(Template.class);
+        expect(template.getMacros()).andReturn(Collections.<String, Macro> emptyMap());
         TemplateHashModel rootDataModel = createMock(TemplateHashModel.class);
-        Writer out = createMock(Writer.class);
-        TemplateDirectiveBody body = createMock(TemplateDirectiveBody.class);
-        GenericServlet servlet = createMock(GenericServlet.class);
-        ObjectWrapper wrapper = createMock(ObjectWrapper.class);
-        ServletContext servletContext = createMock(ServletContext.class);
+        Request parentRequest = createMock(Request.class);
+        expect(rootDataModel.get(Request.class.getName())).andReturn(ObjectWrapper.DEFAULT_WRAPPER.wrap(parentRequest));
         ApplicationContext applicationContext = createMock(ApplicationContext.class);
-        HttpServletRequest httpServletRequest = createMock(HttpServletRequest.class);
-        HttpServletResponse httpServletResponse = createMock(HttpServletResponse.class);
-
-        expect(template.getMacros()).andReturn(new HashMap<String, Macro>());
-        expect(servlet.getServletContext()).andReturn(servletContext)
-                .anyTimes();
-        expect(
-                servletContext
-                        .getAttribute(ApplicationAccess.APPLICATION_CONTEXT_ATTRIBUTE))
-                .andReturn(applicationContext);
-
-        replay(servlet, wrapper, servletContext, applicationContext,
-                httpServletRequest, httpServletResponse);
-        ServletContextHashModel servletContextHashModel = new ServletContextHashModel(
-                servlet, wrapper);
-        HttpRequestHashModel httpRequestHashModel = new HttpRequestHashModel(
-                httpServletRequest, httpServletResponse, wrapper);
-
-        expect(rootDataModel.get(FreemarkerServlet.KEY_APPLICATION)).andReturn(
-                servletContextHashModel);
-        expect(rootDataModel.get(FreemarkerServlet.KEY_REQUEST)).andReturn(
-                httpRequestHashModel);
-
-        replay(template, rootDataModel, out);
+        expect(parentRequest.getApplicationContext()).andReturn(applicationContext);
+        expect(parentRequest.getAvailableScopes()).andReturn(Arrays.asList("parent"));
+        PrintWriter out = createMock(PrintWriter.class);
+        TemplateDirectiveBody body = createMock(TemplateDirectiveBody.class);
+        replay(template, rootDataModel, out, body, parentRequest, applicationContext);
         Environment env = new Environment(template, rootDataModel, out);
-
-        replay(params, body);
         FreemarkerAutotagRuntime runtime = new FreemarkerAutotagRuntime();
-
         runtime.execute(env, params, new TemplateModel[0], body);
         Request request = runtime.createRequest();
         assertTrue(request instanceof FreemarkerRequest);
-        verify(servlet, wrapper, servletContext, applicationContext,
-                httpServletRequest, httpServletResponse,
-                template, rootDataModel, out,
-                params, body);
+        assertEquals(env, ((FreemarkerRequest)request).getEnvironment());
+        verify(template, rootDataModel, out, body, parentRequest, applicationContext);
+    }
+
+    @Test
+    public void testCreateRequest() throws IOException, TemplateModelException {
+        Map<String, TemplateModel> params = Collections.<String, TemplateModel> emptyMap();
+        Template template = createMock(Template.class);
+        expect(template.getMacros()).andReturn(Collections.<String, Macro> emptyMap());
+        TemplateHashModel rootDataModel = createMock(TemplateHashModel.class);
+        expect(rootDataModel.get(Request.class.getName())).andReturn(null);
+        Configuration config = createMock(Configuration.class);
+        expect(template.getConfiguration()).andReturn(config).anyTimes();
+        ApplicationContext applicationContext = createMock(ApplicationContext.class);
+        expect(config.getSharedVariable(Request.class.getName())).andReturn(null);
+        expect(config.getSharedVariable(ApplicationAccess.APPLICATION_CONTEXT_ATTRIBUTE)).andReturn(
+                ObjectWrapper.DEFAULT_WRAPPER.wrap(applicationContext));
+        PrintWriter out = createMock(PrintWriter.class);
+        TemplateDirectiveBody body = createMock(TemplateDirectiveBody.class);
+        
+        replay(template, rootDataModel, out, body, applicationContext, config);
+        Environment env = new Environment(template, rootDataModel, out);
+        FreemarkerAutotagRuntime runtime = new FreemarkerAutotagRuntime();
+        runtime.execute(env, params, new TemplateModel[0], body);
+        Request request = runtime.createRequest();
+        assertTrue(request instanceof FreemarkerRequest);
+        assertEquals(env, ((FreemarkerRequest)request).getEnvironment());
+        verify(template, rootDataModel, out, body, applicationContext, config);
     }
 
     @Test

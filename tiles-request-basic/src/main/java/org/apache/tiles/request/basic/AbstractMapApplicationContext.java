@@ -18,21 +18,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.tiles.request.freemarker.servlet;
 
-import freemarker.template.TemplateModel;
+package org.apache.tiles.request.basic;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.tiles.request.ApplicationContext;
 
 /**
- * It is an object that can create a shared variable, as a template model.
  *
  * @version $Rev$ $Date$
+ * @since 1.1.0
  */
-public interface SharedVariableFactory {
 
-    /**
-     * Creates a new shared variable.
-     *
-     * @return The shared variable.
-     */
-    TemplateModel create();
+public abstract class AbstractMapApplicationContext implements ApplicationContext {
+
+    private Map<String, Object> applicationScope = new HashMap<String, Object>();
+    private Map<String, String> initParams = new HashMap<String, String>();
+    
+    /** {@inheritDoc} */
+    @Override
+    public Map<String, Object> getApplicationScope() {
+        return applicationScope;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Map<String, String> getInitParams() {
+        return initParams;
+    }
 }

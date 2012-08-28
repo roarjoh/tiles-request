@@ -42,6 +42,7 @@ import org.easymock.EasyMock;
  *
  * @version $Rev$ $Date$
  */
+@SuppressWarnings("deprecation")
 public class WildcardPortletApplicationContextTest extends TestCase {
 
     /**
@@ -102,7 +103,7 @@ public class WildcardPortletApplicationContextTest extends TestCase {
                 .anyTimes();
         File dir = new File(".");
         EasyMock.expect(portletContext.getResource("/WEB-INF/")).andReturn(
-                dir.toURI().toURL());
+                dir.toURI().toURL()).anyTimes();
         URL pomUrl = new URL("file://tiles/pom.xml");
         EasyMock.expect(portletContext.getResource("/WEB-INF/pom.xml"))
                 .andReturn(pomUrl);

@@ -20,20 +20,13 @@
  */
 package org.apache.tiles.request.servlet;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.ServletContext;
 
-import org.apache.tiles.request.ApplicationContext;
-import org.apache.tiles.request.ApplicationResource;
+import org.apache.tiles.request.AbstractApplicationContext;
 import org.apache.tiles.request.collection.ReadOnlyEnumerationMap;
 import org.apache.tiles.request.collection.ScopeMap;
-import org.apache.tiles.request.locale.URLApplicationResource;
 import org.apache.tiles.request.servlet.extractor.ApplicationScopeExtractor;
 import org.apache.tiles.request.servlet.extractor.InitParameterExtractor;
 
@@ -42,7 +35,7 @@ import org.apache.tiles.request.servlet.extractor.InitParameterExtractor;
  *
  * @version $Rev$ $Date$
  */
-public class ServletApplicationContext implements ApplicationContext {
+public class ServletApplicationContext extends AbstractApplicationContext {
 
     /**
      * The servlet context to use.
@@ -67,7 +60,9 @@ public class ServletApplicationContext implements ApplicationContext {
      * @param servletContext The servlet context to use.
      */
     public ServletApplicationContext(ServletContext servletContext) {
+        super();
         this.servletContext = servletContext;
+        register(new ServletResourceLocator(servletContext));
     }
 
     /** {@inheritDoc} */
@@ -93,40 +88,5 @@ public class ServletApplicationContext implements ApplicationContext {
         }
         return (initParam);
 
-    }
-
-    /** {@inheritDoc} */
-    public ApplicationResource getResource(String localePath) {
-        try {
-            URL url = servletContext.getResource(localePath);
-            if (url != null) {
-                return new URLApplicationResource(localePath, url);
-            } else {
-                return null;
-            }
-        } catch (MalformedURLException e) {
-            return null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    public ApplicationResource getResource(ApplicationResource base, Locale locale) {
-        try {
-            URL url = servletContext.getResource(base.getLocalePath(locale));
-            if (url != null) {
-                return new URLApplicationResource(base.getPath(), locale, url);
-            } else {
-                return null;
-            }
-        } catch (MalformedURLException e) {
-            return null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    public Collection<ApplicationResource> getResources(String path) {
-        ArrayList<ApplicationResource> resources = new ArrayList<ApplicationResource>();
-        resources.add(getResource(path));
-        return resources;
     }
 }

@@ -22,16 +22,19 @@ package org.apache.tiles.request.freemarker.autotag;
 
 import java.util.Map;
 
-import org.apache.tiles.autotag.core.runtime.ModelBody;
 import org.apache.tiles.autotag.core.runtime.AutotagRuntime;
+import org.apache.tiles.autotag.core.runtime.ModelBody;
+import org.apache.tiles.request.ApplicationAccess;
+import org.apache.tiles.request.ApplicationContext;
 import org.apache.tiles.request.Request;
 import org.apache.tiles.request.freemarker.FreemarkerRequest;
-import org.apache.tiles.request.freemarker.FreemarkerRequestUtil;
+import org.apache.tiles.request.freemarker.FreemarkerRequestWrapper;
 
 import freemarker.core.Environment;
 import freemarker.template.TemplateDirectiveBody;
 import freemarker.template.TemplateDirectiveModel;
 import freemarker.template.TemplateModel;
+import freemarker.template.TemplateModelException;
 
 /**
  * A Runtime for implementing a Freemarker Template Directive.   
@@ -41,7 +44,7 @@ public class FreemarkerAutotagRuntime implements AutotagRuntime<Request>, Templa
     private Environment env;
     private TemplateDirectiveBody body;
     private Map<String, TemplateModel> params;
-    
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override
@@ -54,7 +57,19 @@ public class FreemarkerAutotagRuntime implements AutotagRuntime<Request>, Templa
     /** {@inheritDoc} */
     @Override
     public Request createRequest() {
-        return FreemarkerRequest.createServletFreemarkerRequest(FreemarkerRequestUtil.getApplicationContext(env), env);
+        try {
+            Request request = FreemarkerUtil.getAsObject(env.getVariable(Request.class.getName()), Request.class, null);
+            if (request != null) {
+                return new FreemarkerRequestWrapper(request, env);
+            } else {
+                ApplicationContext applicationContext = FreemarkerUtil.getAsObject(env.getConfiguration()
+                        .getSharedVariable(ApplicationAccess.APPLICATION_CONTEXT_ATTRIBUTE), ApplicationContext.class,
+                        null);
+                return new FreemarkerRequest(applicationContext, env);
+            }
+        } catch (TemplateModelException e) {
+            throw new IllegalStateException("Error accessing the Request in FreemarkerRuntime", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -62,10 +77,10 @@ public class FreemarkerAutotagRuntime implements AutotagRuntime<Request>, Templa
     public ModelBody createModelBody() {
         return new FreemarkerModelBody(env.getOut(), body);
     }
-    
+
     /** {@inheritDoc} */
     @Override
     public <T> T getParameter(String name, Class<T> type, T defaultValue) {
-        return FreemarkerUtil.getAsObject((TemplateModel)params.get(name), type, defaultValue);
+        return FreemarkerUtil.getAsObject((TemplateModel) params.get(name), type, defaultValue);
     }
 }

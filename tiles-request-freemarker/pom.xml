@@ -43,6 +43,7 @@ under the License.
   	<dependency>
   		<groupId>org.apache.tiles</groupId>
   		<artifactId>tiles-request-servlet</artifactId>
+  		<optional>true</optional>
   	</dependency>
   	<dependency>
   		<groupId>javax.servlet</groupId>
@@ -73,6 +74,12 @@ under the License.
   		<groupId>org.apache.tiles</groupId>
   		<artifactId>tiles-autotag-core-runtime</artifactId>
   		<optional>true</optional>
+  	</dependency>
+  	<dependency>
+  		<groupId>commons-io</groupId>
+  		<artifactId>commons-io</artifactId>
+  		<version>1.4</version>
+  		<scope>test</scope>
   	</dependency>
   </dependencies>
 </project>

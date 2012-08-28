@@ -21,64 +21,53 @@
 
 package org.apache.tiles.request.freemarker.render;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.tiles.request.Request;
-import org.apache.tiles.request.freemarker.FreemarkerRequestException;
 import org.apache.tiles.request.render.CannotRenderException;
 import org.apache.tiles.request.render.Renderer;
-import org.apache.tiles.request.servlet.ExternalWriterHttpServletResponse;
-import org.apache.tiles.request.servlet.ServletRequest;
+
+import freemarker.template.Configuration;
+import freemarker.template.ObjectWrapper;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 
 /**
  * FreeMarker renderer for rendering FreeMarker templates as Tiles attributes.
- * It is only usable under a Servlet environment, because it uses
- * {@link AttributeValueFreemarkerServlet} internally to forward the request.<br/>
- * To initialize it correctly, call {@link #setParameter(String, String)} for all the
- * parameters that you want to set, and then call {@link #commit()}.
  *
  * @version $Rev$ $Date$
  */
 public class FreemarkerRenderer implements Renderer {
 
-    /**
-     * The servlet that is used to forward the request to.
-     */
-    private AttributeValueFreemarkerServlet servlet;
+    private Configuration configuration;
+    private ObjectWrapper wrapper;
 
-    /**
-     * Constructor.
-     *
-     * @param servlet The servlet to use.
-     */
-    public FreemarkerRenderer(AttributeValueFreemarkerServlet servlet) {
-        this.servlet = servlet;
+    public FreemarkerRenderer() {
+    }
+    
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
+        this.wrapper = configuration.getObjectWrapper();
+        if (this.wrapper == null) {
+            this.wrapper = ObjectWrapper.DEFAULT_WRAPPER;
+        }
     }
 
-    /** {@inheritDoc} */
     @Override
     public void render(String path, Request request) throws IOException {
-        if (path == null) {
-            throw new CannotRenderException("Cannot dispatch a null path");
-        }
-        ServletRequest servletRequest = org.apache.tiles.request.servlet.ServletUtil.getServletRequest(request);
-        HttpServletRequest httpRequest = servletRequest.getRequest();
-        HttpServletResponse httpResponse = servletRequest.getResponse();
-        servlet.setValue(path);
         try {
-            servlet.doGet(httpRequest,
-                    new ExternalWriterHttpServletResponse(httpResponse,
-                            request.getPrintWriter()));
-        } catch (ServletException e) {
-            throw new FreemarkerRequestException("Exception when rendering a FreeMarker attribute", e);
+            RequestHashModel model = new RequestHashModel(wrapper, request);
+            Template template = configuration.getTemplate(path, request.getRequestLocale());
+            template.process(model, request.getWriter());
+        } catch (FileNotFoundException e) {
+            throw new CannotRenderException("Couln't locate Freemarker template " + path, e);
+        } catch (TemplateException e) {
+            throw new CannotRenderException("Couln't process Freemarker template " + path, e);
         }
     }
 
-    /** {@inheritDoc} */
+    @Override
     public boolean isRenderable(String path, Request request) {
         return path != null && path.startsWith("/") && path.endsWith(".ftl");
     }

@@ -46,6 +46,7 @@ under the License.
 
     <modules>
         <module>tiles-request-api</module>
+        <module>tiles-request-basic</module>
         <module>tiles-request-servlet</module>
         <module>tiles-request-servlet-wildcard</module>
         <module>tiles-request-portlet</module>
@@ -54,6 +55,7 @@ under the License.
         <module>tiles-request-freemarker</module>
         <module>tiles-request-velocity</module>
         <module>tiles-request-mustache</module>
+        <module>tiles-request-spring</module>
         <module>assembly</module>
     </modules>
     <distributionManagement>
@@ -141,6 +143,7 @@ under the License.
         <tiles.osgi.private />
         <tiles.manifestfile>target/osgi/MANIFEST.MF</tiles.manifestfile>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring.version>3.0.5.RELEASE</spring.version>
     </properties>
 
     <dependencyManagement>
@@ -215,8 +218,41 @@ under the License.
 
             <dependency>
                 <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>${spring.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context-support</artifactId>
+                <version>${spring.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webmvc</artifactId>
+                <version>${spring.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
-                <version>2.5.6</version>
+                <version>${spring.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>commons-logging</groupId>
@@ -227,7 +263,7 @@ under the License.
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-webmvc-portlet</artifactId>
-                <version>2.5.6</version>
+                <version>${spring.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.springframework</groupId>
